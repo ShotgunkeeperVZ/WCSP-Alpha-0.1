@@ -2,6 +2,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 public class FireFly {
 
@@ -43,6 +44,10 @@ public class FireFly {
 
         }
 
+//
+//        Stream<Variable> variableStream = candidateFireFly.getVariables().stream();
+//        variableStream.forEach()
+
 //        System.out.println("Hamming: "+hammingDistanceValue);
         return hammingDistanceValue;
     }
@@ -55,8 +60,8 @@ public class FireFly {
 
     public double attractiveness(FireFly candidateFireFly) {
         double distance = this.hammingDistance(candidateFireFly);
-        this.print();
-        candidateFireFly.print();
+//        this.print();
+//        candidateFireFly.print();
 
 
         return (Math.exp(-FireFly.ConvergenceMultiplier * (Math.pow(distance, 2)))) * FireFly.BaseAttraction;
