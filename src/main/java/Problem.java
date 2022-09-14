@@ -1,8 +1,12 @@
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import static java.lang.Math.abs;
 
@@ -23,21 +27,7 @@ Problem {
 
 //Temp static and public
 
-    public static double Cost(ArrayList<Variable> constraintVariables) {
-        double cost = 0;
-        for (int i = 1; i < constraintVariables.size() - 1; i++) {
-            for (int j = i; j < constraintVariables.size(); j++) {
-                //System.out.println("Column: "+i+"\t"+"Row: " + constraintVariables.get(i).getValue());
-                //System.out.println("Column: "+j+"\t"+"Row: " + constraintVariables.get(j).getValue());
-                if (abs(constraintVariables.get(i).getValue() - constraintVariables.get(j).getValue()) == j - i) {
-                    cost += 10;
 
-                }
-
-            }
-        }
-        return cost;
-    }
 
     public boolean AddVariable(Variable variable) {
 
@@ -63,8 +53,36 @@ Problem {
     }
 
     public void Solve() {
+
+        /*
+         * Normally making swarm optimization algorithms run at parallel is difficult,
+         * because movements of an agent is determined by other agents location and value of their objective function,
+         * Normally these algorithms are run sequentially, meaning that the order at which a firefly moves is determined by
+         * the order agents are held in the data structure chosen by the designer.
+         *
+         * So one can say the order of the agents operation dose significantly  affect the final results.
+         * If instead of executing operations on a per-firefly basis we execute movement operations on a pair of agents relations basis,
+         * so we are effectively executing a movement operation for every two-membered subset of {x: x > 0 and x <= FireFly Count},
+         * hence there will be (n * (n-1))/2 movement operations that need be executed.
+         * We can order these subsets in n/2 groups of n-1 size in a way that no pairs of subsets in the group have a non-empty junction set.
+         * This way there won't any possibility of collision (a firefly considering movement to another firefly that is already in a movement process)
+         * so we can execute all operations on each group in parallel, technically, this approach is not linearly scalable, say if you have initialized the problem with 16 agents,
+         * and you are running the program on an 8 Core/16 Thread Machine, you would probably see a big performance regression comparing to running the software sequentially.
+         *
+         * But you can solve this issue with running more firelies which menas reaching better solutions or reaching them faster.
+         *
+         * */
+
+
 //        TEMP
         int k = 0;
+        // for some reason this was in the loop?! Why I don't know
+        ArrayList<Pair> flyPairs = new ArrayList<>();
+        for(int i = 0;i< this.fireFlies.size();i++){
+            for(int j = i; j < this.fireFlies.size(); j++){
+                flyPairs.add(Pair.of(i,j));
+            }
+        }
 //        END TEMP
         while (k < 50) {
 
@@ -77,24 +95,53 @@ Problem {
 
              As hamming distance calculation are independent from each other, we do them in parallel.4
              */
-            ArrayList<Pair> flyPairs = new ArrayList<>();
-            for(int i = 0;i< this.fireFlies.size();i++){
-                for(int j = i; j < this.fireFlies.size(); j++){
-                    flyPairs.add(Pair.of(i,j));
-                }
-            }
-            double[][] hammingDistanceMatrix = new double[this.fireFlies.size()][this.fireFlies.size()];
 
 
+
+//            int[][] hammingDistanceMatrix = new int[this.fireFlies.size()][this.fireFlies.size()];
+
+
+                //Matrix was too much memory!!
+            Map<Pair,Double> attractivenessMap = new ConcurrentHashMap<>(flyPairs.size());
 
 //            TODO: change hamming matrix to attractiveness
 //        Stream<Pair> variableStream =
-                flyPairs.parallelStream().forEach(pair -> {
-                    hammingDistanceMatrix[(Integer) pair.getLeft()][(Integer) pair.getRight()] = this.fireFlies.get((Integer) pair.getLeft()).hammingDistance(this.fireFlies.get((Integer) pair.getRight()));
-                    hammingDistanceMatrix[(Integer) pair.getRight()][(Integer) pair.getLeft()] = this.fireFlies.get((Integer) pair.getLeft()).hammingDistance(this.fireFlies.get((Integer) pair.getRight()));
-                });
 
-            System.out.println(Arrays.deepToString(hammingDistanceMatrix));
+            System.out.println("B");
+                flyPairs.parallelStream().forEach(pair -> {
+
+                    FireFly explorerFireFly = this.fireFlies.get((int) pair.getLeft());
+                    FireFly candidateFireFly = this.fireFlies.get((int) pair.getRight());
+                    Double distance = explorerFireFly.hammingDistance(candidateFireFly);
+                    Double attractiveness = Math.exp(-FireFly.ConvergenceMultiplier * Math.pow(distance,2)) * FireFly.BaseAttraction;
+                    attractivenessMap.put(pair,attractiveness);
+
+                });
+            System.out.println("Af");
+//                flyPairs.stream().forEach(pair -> {
+//                    FireFly leftFireFly = this.fireFlies.get((int) pair.getLeft());
+//                    FireFly rightFireFly = this.fireFlies.get((int) pair.getRight());
+//
+//
+//                    for(int i=0;i < leftFireFly.getVariables().size();i++){
+//                        Random random = new Random();
+//                        double cutter = random.nextDouble(1);
+//                        if(attractivenessMap.get(pair) < cutter){
+//                            leftFireFly.getVariables().get(i).setValue(rightFireFly.getVariables().get(i).getValue());
+//
+//                        }
+//                    }
+//
+//                    for(int i=0;i < rightFireFly.getVariables().size();i++){
+//                        Random random = new Random();
+//                        double cutter = random.nextDouble(1);
+//                        if(attractivenessMap.get(pair) < cutter){
+//                            rightFireFly.getVariables().get(i).setValue(leftFireFly.getVariables().get(i).getValue());
+//                           }
+//                    }
+//                        });
+
+//            System.out.println(Arrays.deepToString(hammingDistanceMatrix));
 
 
 //
@@ -139,9 +186,6 @@ Problem {
 
     }
 
-    public ArrayList<FireFly> getFireFlies() {
-        return fireFlies;
-    }
 
 
 }

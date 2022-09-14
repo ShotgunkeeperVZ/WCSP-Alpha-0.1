@@ -11,7 +11,7 @@ public class main {
         problem.AddVariable(new Variable("G", 1, 8));
         problem.AddVariable(new Variable("H", 1, 8));
 
-        problem.Initialize(100);
+        problem.Initialize(1000);
         problem.Solve();
 
 

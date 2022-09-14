@@ -4,31 +4,43 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import static java.lang.Math.abs;
+
 public class FireFly {
 
     public String flyID = UUID.randomUUID().toString();
+    private Double cost;
 
-    //TODO: REFACTOR!!!!!!
-    //TODO: changelog should contain cost and it should be in a firefly not a var instance\
-    //TODO: Runner.java performance and correctness
-    //TODO: fp logic
-    /* TODO:
-        1- Vectorize hamming distance calculation
-        2- Vectorize Attractiveness Calculation
-     */
     public FireFly(ArrayList<Variable> variables) {
         //init all variables to a random number within their space
         for (int i = 0; i < variables.size(); i++) {
             Variable variable = variables.get(i);
             this.variables.add(new Variable(variable.getName(), variable.getFloorRange(), variable.getCeilingRange()));
             this.variables.get(i).setValue(this.getRandomNumber(variable.getFloorRange(), variable.getCeilingRange() + 1));
-            this.variables.get(i).changeLog.add(this.variables.get(i).getValue());
+            this.cost = this.Cost(this.variables);
+            //this.variables.get(i).changeLog.add(this.variables.get(i).getValue());
         }
 
 //       variables.forEach(variable -> this.variables.add(variable));
 //       this.variables.forEach(variable -> variable.setValue();
 //       System.out.println("FireFly");
 //       this.variables.forEach(variable -> System.out.println("Name: " + variable.getName() + "\tValue: "+variable.getValue()));
+    }
+
+    public static double Cost(ArrayList<Variable> constraintVariables) {
+        double cost = 0;
+        for (int i = 1; i < constraintVariables.size() - 1; i++) {
+            for (int j = i; j < constraintVariables.size(); j++) {
+                //System.out.println("Column: "+i+"\t"+"Row: " + constraintVariables.get(i).getValue());
+                //System.out.println("Column: "+j+"\t"+"Row: " + constraintVariables.get(j).getValue());
+                if (abs(constraintVariables.get(i).getValue() - constraintVariables.get(j).getValue()) == j - i) {
+                    cost += 10;
+
+                }
+
+            }
+        }
+        return cost;
     }
 
     public double hammingDistance(FireFly candidateFireFly) {
@@ -54,8 +66,10 @@ public class FireFly {
 
     //TEMP CONIG
 //    will move
+
     public static double BaseAttraction = 1;
     public static double ConvergenceMultiplier = 0.009;
+    public static double ExplorationRate = 0.5;
 
 
     public double attractiveness(FireFly candidateFireFly) {
@@ -83,12 +97,15 @@ public class FireFly {
             }
             System.out.println("\n");
         }
-        System.out.println("Cost of FireFly:\t" + Problem.Cost(this.variables));
+
     }
 
     public ArrayList<Variable> getVariables() {
         return variables;
     }
 
+    public void move(FireFly candidateFirefly){
+
+    }
     private final ArrayList<Variable> variables = new ArrayList<>();
 }
